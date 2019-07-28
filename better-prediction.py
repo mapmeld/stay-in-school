@@ -10,7 +10,7 @@ from scipy import stats
 from sklearn import preprocessing, utils
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import SGDRegressor, BayesianRidge, ARDRegression, LinearRegression
-from sklearn.neighbors import KNeighborsRegressor, RadiusNeighborsRegressor
+from sklearn.neighbors import KNeighborsRegressor #, RadiusNeighborsRegressor
 from sklearn.svm import SVR
 # add XGBoost? LogisticRegression expects classifier?
 
@@ -75,8 +75,8 @@ def predict(algo, zscoreX, zscoreY, urbanOnly):
     print(r2_score(y[dividing_line:], y_predict))
 
 # eli5 and other libraries better than alibi for explaining?
-for algo in [RandomForestRegressor, SGDRegressor, BayesianRidge, ARDRegression, LinearRegression, KNeighborsRegressor, RadiusNeighborsRegressor, SVR]:
+for algo in [RandomForestRegressor, SGDRegressor, BayesianRidge, ARDRegression, LinearRegression, KNeighborsRegressor, SVR]:
     for zscoreX in [True, False]:
         for zscoreY in [True, False]:
-            for urbanOnly in [True, False]:
+            for urbanOnly in [False]: # True, False
                 predict(algo, zscoreX, zscoreY, urbanOnly)
