@@ -1,6 +1,6 @@
 # better prediction attempts
 # focus on Grade 1b->2b
-# pip3 install scikit-learn numpy scipy
+# pip3 install scikit-learn numpy scipy xgboost
 
 import csv
 from random import shuffle
@@ -8,11 +8,11 @@ from random import shuffle
 import numpy as np
 from scipy import stats
 from sklearn import preprocessing, utils
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import SGDRegressor, BayesianRidge, ARDRegression, LinearRegression
+from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
+from sklearn.linear_model import SGDRegressor, BayesianRidge, LinearRegression #, LogisticRegression
 from sklearn.neighbors import KNeighborsRegressor #, RadiusNeighborsRegressor
 from sklearn.svm import SVR
-# add XGBoost? LogisticRegression expects classifier?
+from xgboost import XGBRegressor
 
 from sklearn.metrics import explained_variance_score, r2_score
 
@@ -75,7 +75,12 @@ def predict(algo, zscoreX, zscoreY, urbanOnly):
     print(r2_score(y[dividing_line:], y_predict))
 
 # eli5 and other libraries better than alibi for explaining?
-for algo in [RandomForestRegressor, SGDRegressor, BayesianRidge, ARDRegression, LinearRegression, KNeighborsRegressor, SVR]:
+
+# scale to municipio pop
+# urban only
+# include class size / school size
+
+for algo in [RandomForestRegressor, SGDRegressor, BayesianRidge, LinearRegression, KNeighborsRegressor, SVR, XGBRegressor, AdaBoostRegressor]:
     for zscoreX in [True, False]:
         for zscoreY in [True, False]:
             for urbanOnly in [False]: # True, False
