@@ -8,58 +8,45 @@ connection_string = argv[1]
 conn = psycopg2.connect(connection_string)
 cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-"""
-UPDATE school_geo SET first_grader_count = (SELECT first_graders FROM school_perf WHERE school::text = "CODIGÓ C.E."::text);
-UPDATE school_geo SET second_grader_count = (SELECT first_graders - repeat_or_drop FROM school_perf WHERE school::text = "CODIGÓ C.E."::text);
+grades = ['01','02','03','04','05','06','07','08','1b','2b','3b']
 
-testfix2=> SELECT * FROM school_perf_2017_08 LIMIT 1;
- base_year | base_grade | school_code | students_in_grade | students_in_school | moved | repeated | temp_dropped_out | perm_dropped_out
------------+------------+-------------+-------------------+--------------------+-------+----------+------------------+------------------
-      2017 | 08         | 13351       |                25 |                133 |     1 |        1 |                0 |                1
-"""
+for grade in grades[:9]:
+    print(grade)
+    cursor.execute('DROP TABLE IF EXISTS geo_school_' + grade)
 
-cursor.execute('DROP TABLE IF EXISTS geo_school_1b')
-cursor.execute('DROP TABLE IF EXISTS geo_school_2b')
+    # get the schools and geo counts
+    cursor.execute('CREATE TABLE geo_school_' + grade + ' AS (SELECT * FROM school_export)')
 
-# get the schools and geo counts
-cursor.execute('CREATE TABLE geo_school_1b AS (SELECT * FROM geo_schools)')
+    # drop columns not needed for predictions
+    cursor.execute('ALTER TABLE geo_school_' + grade + ' DROP COLUMN point')
+    cursor.execute('ALTER TABLE geo_school_' + grade + ' DROP COLUMN rand')
+    for other_grade in grades:
+        if other_grade != grade:
+            try:
+                other_grade = str(int(other_grade))
+            except:
+                b = 1
+            cursor.execute('ALTER TABLE geo_school_' + grade + ' DROP COLUMN grade_pop_' + other_grade)
 
-# drop columns not needed for predictions
-cursor.execute('ALTER TABLE geo_school_1b DROP COLUMN point')
-cursor.execute('ALTER TABLE geo_school_1b DROP COLUMN rand')
+    # add columns for y-values
+    cursor.execute('ALTER TABLE geo_school_' + grade + ' ADD COLUMN grad_' + grade + ' FLOAT')
 
-# add columns for y-values
-cursor.execute('ALTER TABLE geo_school_1b ADD COLUMN grad_1b FLOAT')
+    cursor.execute('UPDATE geo_school_' + grade + ' SET grad_' + grade + ' = \
+    ( \
+        SELECT (students_in_grade - temp_dropped_out - perm_dropped_out - repeated)::float \
+            / students_in_grade::float \
+        FROM school_perf_2017_' + grade + ' \
+        WHERE school_perf_2017_' + grade + '.school_code::text = geo_school_' + grade + '.school_code::text \
+        LIMIT 1 \
+    )')
+    conn.commit()
+    try:
+        grade_col = str(int(grade))
+    except:
+        grade_col = grade
+    system('sql2csv --db ' + connection_string + ' --query \'SELECT * FROM geo_school_' + grade + ' WHERE grade_pop_' + grade_col + ' > 0\' > grad_' + grade + '.csv')
 
-cursor.execute('UPDATE geo_school_1b SET grad_1b = \
-( \
-    SELECT (students_in_grade - temp_dropped_out - perm_dropped_out - repeated)::float \
-        / students_in_grade::float \
-    FROM school_perf_2017_1b \
-    WHERE school_perf_2017_1b.school_code::text = geo_school_1b.school_code::text \
-    LIMIT 1 \
-)')
-conn.commit()
-system('sql2csv --db ' + connection_string + ' --query \'SELECT * FROM geo_school_1b WHERE grad_1b IS NOT NULL \' > grad_1b.csv')
-
-# get 2b while we are here
-cursor.execute('CREATE TABLE geo_school_2b AS (SELECT * FROM geo_schools)')
-
-# add
-cursor.execute('ALTER TABLE geo_school_2b ADD COLUMN grad_2b FLOAT')
-cursor.execute('UPDATE geo_school_2b SET grad_2b = \
-( \
-    SELECT (students_in_grade - temp_dropped_out - perm_dropped_out - repeated)::float \
-        / students_in_grade::float \
-    FROM school_perf_2017_2b \
-    WHERE school_perf_2017_2b.school_code::text = geo_school_2b.school_code::text \
-    LIMIT 1 \
-)')
-conn.commit()
-system('sql2csv --db ' + connection_string + ' --query \'SELECT * FROM geo_school_2b WHERE grad_2b IS NOT NULL \' > grad_2b.csv')
-
-cursor.execute('DROP TABLE geo_school_1b')
-cursor.execute('DROP TABLE geo_school_2b')
-conn.commit()
+    cursor.execute('DROP TABLE geo_school_' + grade)
+    conn.commit()
 
 conn.close()
