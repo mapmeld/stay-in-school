@@ -17,7 +17,12 @@ from xgboost import XGBRegressor
 from sklearn.metrics import explained_variance_score, r2_score
 
 
-grades = ['01','02','03','04','05','06','07','08']
+grades = ['01','02','03','04','05','06','07','08','1b']
+
+# column indexes
+remove_columns = [35, 37] # all zeroes, I think
+retiro_total = None
+retiro_final = None
 
 for grade in grades:
     print(grade)
@@ -25,6 +30,7 @@ for grade in grades:
     # drop first column (school code)
     # last column is y-values
     original_x = []
+    x_retiro_shares = []
     original_y = []
 
     with open('grad_' + grade + '.csv') as csv_file:
@@ -35,37 +41,76 @@ for grade in grades:
             index = index + 1
             if (index > 1):
                 datarows.append(row)
+            else:
+                # header info
+                retiro_total = row.index('retiros_2010_acelerada_total')
+                retiro_final = row.index('retiros_2017_educmedia_crime')
+                if retiro_total is None or retiro_final is None:
+                    print(row)
+                    quit()
+
         shuffle(datarows)
 
         for row in datarows:
-            xrow = []
-            vind = -1
-            for val in row[1:-1]:
-                vind = vind + 1
-                # avoid these always-zero columns
-                if vind not in [35, 37]:
-                    xrow.append(int(val))
+            if row[-1] != '':
+                xrow = []
+                xrow_retiro_shares = []
+                latest_retiro_total = 1
+                vind = -1
+                for val in row[1:-1]:
+                    vind = vind + 1
+                    # avoid these always-zero columns
+                    if vind not in remove_columns:
+                        if val == '':
+                            val = 0
 
-            original_x.append(xrow)
-            original_y.append(float(row[-1]))
+                        # xrow stores original value
+                        xrow.append(int(val))
+
+                        # retiros shares %ages of students who left for various reasons
+                        if vind >= retiro_total and vind <= retiro_final:
+                            if ((vind - retiro_total) % 6) == 0:
+                                # this is a total for this year/grade level
+                                val = int(val)
+                                latest_retiro_total = float(val)
+                            else:
+                                # this is a number of people who left for a particular reason
+                                # which we represent in retiro_shares as a percentage float
+                                val = float(val) / latest_retiro_total
+                            xrow_retiro_shares.append(val)
+                        else:
+                            xrow_retiro_shares.append(int(val))
+
+                original_x.append(xrow)
+                x_retiro_shares.append(xrow_retiro_shares)
+                original_y.append(float(row[-1]))
 
     original_x = np.array(original_x)
     scaled_x = stats.zscore(np.copy(original_x), axis=0)
+
+    x_retiro_shares = np.array(x_retiro_shares)
+    scaled_retiro_shares = stats.zscore(np.copy(x_retiro_shares), axis=0)
 
     original_y = np.array(original_y)
     scaled_y = stats.zscore(np.copy(original_y), axis=0)
 
     dividing_line = int(0.8 * len(original_x))
 
-    def predict(algo, zscoreX, zscoreY, urbanOnly):
+    def predict(algo, zscoreX, zscoreY, retiroPercent, urbanOnly):
         # print algo, accuracy, r-squared?
         print(algo)
-        print('with zScore on X: ' + str(zscoreX) + ' and Y: ' + str(zscoreY) + ' : urban only? ' + str(urbanOnly))
+        print('with zScore on X: ' + str(zscoreX) + ' and Y: ' + str(zscoreY) + ' and retiros_share ? ' + str(retiroPercent) + ' and urban only? ' + str(urbanOnly))
 
         if zscoreX:
-            x = np.copy(scaled_x)
+            if retiroPercent:
+                x = np.copy(scaled_retiro_shares)
+            else:
+                x = np.copy(scaled_x)
         else:
-            x = np.copy(original_x)
+            if retiroPercent:
+                x = np.copy(x_retiro_shares)
+            else:
+                x = np.copy(original_x)
 
         if zscoreY:
             y = np.copy(scaled_y)
@@ -83,10 +128,11 @@ for grade in grades:
 
     # scale to municipio pop
     # urban only
-    # include class size / school size
 
-    for algo in [RandomForestRegressor, SGDRegressor, BayesianRidge, LinearRegression, KNeighborsRegressor, SVR, XGBRegressor, AdaBoostRegressor]:
+# RandomForestRegressor, SGDRegressor, KNeighborsRegressor, AdaBoostRegressor
+    for algo in [BayesianRidge, LinearRegression, SVR, XGBRegressor]:
         for zscoreX in [True, False]:
             for zscoreY in [True, False]:
-                for urbanOnly in [False]: # True, False
-                    predict(algo, zscoreX, zscoreY, urbanOnly)
+                for retiroPercent in [True, False]:
+                    for urbanOnly in [False]: # True, False
+                        predict(algo, zscoreX, zscoreY, retiroPercent, urbanOnly)

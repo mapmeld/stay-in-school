@@ -9,8 +9,8 @@ connection_string = argv[1]
 years = [2010, 2012, 2014, 2015, 2016, 2017] # 2018
 
 # importing CSVs into database
-# for year in years:
-#     system('csvsql --db ' + connection_string + ' --tables retiros_' + str(year) + ' --insert retiros/' + str(year) + '.csv')
+for year in years:
+    system('csvsql --db ' + connection_string + ' --tables retiros_' + str(year) + ' --insert retiros/' + str(year) + '.csv')
 
 conn = psycopg2.connect(connection_string)
 cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -56,7 +56,7 @@ for year in years:
 
         # all people leaving (we should already know this, but we want it to be consistent)
         cursor.execute('UPDATE school_export SET ' + col_name + '_total = ( \
-            SELECT COUNT(*) \
+            SELECT SUM("ALUMNOS") \
             FROM retiros_' + str(year) + ' \
             WHERE school_code::text = "CÓDIGO C.E."::text \
             AND ' + edu_query + ' \
@@ -67,7 +67,7 @@ for year in years:
             reason_col = col_name + '_' + reason
             cursor.execute('ALTER TABLE school_export ADD COLUMN ' + reason_col + ' INT')
             cursor.execute('UPDATE school_export SET ' + reason_col + ' = ( \
-                SELECT COUNT(*) \
+                SELECT SUM("ALUMNOS") \
                 FROM retiros_' + str(year) + ' \
                 WHERE school_code::text = "CÓDIGO C.E."::text \
                 AND ' + edu_query + ' \
