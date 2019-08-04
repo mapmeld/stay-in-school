@@ -6,11 +6,12 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 connection_string = argv[1]
-years = [2010, 2012, 2014, 2015, 2016, 2017] # 2018
+years = [2010, 2012, 2013, 2014, 2015, 2016, 2017, 2018]
 
 # importing CSVs into database
-for year in years:
-    system('csvsql --db ' + connection_string + ' --tables retiros_' + str(year) + ' --insert retiros/' + str(year) + '.csv')
+# for year in years:
+#     print(year)
+#     system('csvsql -v --db ' + connection_string + ' --tables retiros_' + str(year) + ' retiros/' + str(year) + '.csv')
 
 conn = psycopg2.connect(connection_string)
 cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -39,8 +40,9 @@ reasons = {
 }
 
 for year in years:
-    cursor.execute('CREATE INDEX retir_' + str(year) + ' ON school_export (school_code)')
+    # cursor.execute('CREATE INDEX retir_' + str(year) + ' ON school_export (school_code)')
     cursor.execute('CREATE INDEX retiroo_' + str(year) + ' ON retiros_' + str(year) + ' ("CÓDIGO C.E.")')
+    conn.commit()
     print(year)
 
     for grade in grades:
@@ -63,6 +65,7 @@ for year in years:
         )')
 
         for reason in reasons.keys():
+            print(reason)
 
             reason_col = col_name + '_' + reason
             cursor.execute('ALTER TABLE school_export ADD COLUMN ' + reason_col + ' INT')
