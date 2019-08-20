@@ -19,7 +19,8 @@ from sklearn.metrics import explained_variance_score, r2_score
 from eli5 import show_prediction, show_weights
 
 
-grades = ['06','1b']
+# 06
+grades = ['1b']
 
 # column indexes
 remove_columns = [35, 37, 419, 420,421,422,423,424,428,498,499,500,501,502,504,505,506,507,508,510,511,512,513,514,516,517,518,519,520,522,523,524,525,526,527,528,529,530,531, 532, 536, 563, 564, 565, 566, 567, 568, 572, 574, 607, 614, 616, 619, 620] # all zeroes, I think
@@ -86,8 +87,8 @@ for grade in grades:
 
     def run_algos():
         for algo in [XGBRegressor]: # BayesianRidge,
-            for zscoreX in [True]:
-                for zscoreY in [False]:
+            for zscoreX in [False]:
+                for zscoreY in [True]:
                     predict(algo, zscoreX, zscoreY)
 
     with open('grad_' + grade + '.csv') as csv_file:
@@ -107,17 +108,17 @@ for grade in grades:
                 for header in headers[1:-1]:
                     if header is not None:
                         feature_names.append(header)
-                print(feature_names[380])
-                print(feature_names[381])
-                print(feature_names[385])
-                print(feature_names[224])
-                print(feature_names[189])
-                print(feature_names[223])
-                print(feature_names[295])
-                print(feature_names[344])
-                print(feature_names[298])
-                print(feature_names[404])
-                print(feature_names[517])
+                # print(feature_names[195])
+                # print(feature_names[492])
+                # print(feature_names[234])
+                # print(feature_names[229])
+                # print(feature_names[231])
+                # print(feature_names[151])
+                # print(feature_names[160])
+                # print(feature_names[379])
+                # print(feature_names[315])
+                # print(feature_names[236])
+                # print(feature_names[575])
                 retiro_total = row.index('retiros_2010_acelerada_total')
                 retiro_final = row.index('retiros_2017_educmedia_crime')
                 # if retiro_total is None or retiro_final is None:
