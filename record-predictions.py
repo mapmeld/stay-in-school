@@ -12,6 +12,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import BayesianRidge, LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 from xgboost import XGBRegressor
+from autosklearn.regression import AutoSklearnRegressor
 
 from sklearn.metrics import explained_variance_score, r2_score
 
@@ -28,9 +29,13 @@ for grade in grades:
     # drop first column (school code)
     # last column is y-values
 
-    def predict(algo, zscoreX, zscoreY):
+    if grade == '06':
+        model = XGBRegressor()
+    else:
+        model = AutoSklearnRegressor(time_left_for_this_task=3000, per_run_time_limit=600)
+
+    def predict(zscoreX, zscoreY):
         # print algo, accuracy, r-squared?
-        print(algo)
         print('with zScore on X: ' + str(zscoreX) + ' and Y: ' + str(zscoreY))
 
         if zscoreX:
@@ -43,7 +48,6 @@ for grade in grades:
         else:
             y = np.copy(original_y)
 
-        model = algo()
         model.fit(x[:dividing_line], y[:dividing_line])
         y_predict = model.predict(x[dividing_line:])
 
@@ -62,12 +66,9 @@ for grade in grades:
 
 # RandomForestRegressor, SGDRegressor, KNeighborsRegressor, AdaBoostRegressor
     def run_algos():
-        for algo in [
-            #BayesianRidge, LinearRegression,
-            XGBRegressor]:
-            for zscoreX in [True]:
-                for zscoreY in [False]:
-                    predict(algo, zscoreX, zscoreY)
+        for zscoreX in [False]:
+            for zscoreY in [True]:
+                predict(zscoreX, zscoreY)
 
     with open('grad_' + grade + '.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')

@@ -7,18 +7,19 @@ from random import shuffle
 import numpy as np
 from scipy import stats
 from sklearn import preprocessing, utils
-from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
-from sklearn.linear_model import SGDRegressor, BayesianRidge, LinearRegression #, LogisticRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import BayesianRidge, LinearRegression
 from sklearn.neighbors import KNeighborsRegressor #, RadiusNeighborsRegressor
 from sklearn.svm import SVR
 from autosklearn.regression import AutoSklearnRegressor
+from sklearn.neural_network import MLPRegressor
 
 from xgboost import XGBRegressor
 
 from sklearn.metrics import explained_variance_score, r2_score
 
 #'01','02','03','04','05',
-grades = ['06'] #,'07','08','1b']
+grades = ['01', '02', '03', '04', '05', '06', '07','08','1b']
 
 # column indexes
 remove_columns = [35, 37, 419, 420,421,422,423,424,428,498,499,500,501,502,504,505,506,507,508,510,511,512,513,514,516,517,518,519,520,522,523,524,525,526,527,528,529,530,531, 532, 536, 563, 564, 565, 566, 567, 568, 572, 574, 607, 614, 616, 619, 620] # all zeroes, I think
@@ -130,6 +131,8 @@ for grade in grades:
 
         if algo == AutoSklearnRegressor:
             model = algo(time_left_for_this_task=600, per_run_time_limit=120)
+        elif algo == RandomForestRegressor:
+            model = algo(n_estimators=150)
         else:
             model = algo()
         model.fit(x[:dividing_line], y[:dividing_line])
@@ -144,9 +147,9 @@ for grade in grades:
     # urban only
 
 # RandomForestRegressor, SGDRegressor, KNeighborsRegressor, AdaBoostRegressor
-    for algo in [AutoSklearnRegressor, BayesianRidge, LinearRegression, SVR, XGBRegressor]:
-        for zscoreX in [True, False]: # did I comment this out before for HS?
-            for zscoreY in [True, False]:
-                for retiroPercent in [True, False]:
+    for algo in [BayesianRidge, LinearRegression, SVR, XGBRegressor]:
+        for zscoreX in [False]: # did I comment this out before for HS?
+            for zscoreY in [False]:
+                for retiroPercent in [False]:
                     for urbanOnly in [False]: # True, False
                         predict(algo, zscoreX, zscoreY, retiroPercent, urbanOnly)
