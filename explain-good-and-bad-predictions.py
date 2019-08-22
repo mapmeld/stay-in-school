@@ -1,28 +1,24 @@
-# better prediction attempts
-# focus on Grade 1b->2b
-# pip3 install scikit-learn numpy scipy xgboost
+# this does the predictions AND some cool explainable AI stuff
+# pip3 install scikit-learn numpy scipy xgboost eli5
 
 import csv, json
 from random import shuffle
 
 import numpy as np
 from scipy import stats
-from sklearn import preprocessing, utils
+from sklearn.metrics import explained_variance_score, r2_score
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import BayesianRidge, LinearRegression
-from sklearn.neighbors import KNeighborsRegressor
 from xgboost import XGBRegressor
-
-from sklearn.metrics import explained_variance_score, r2_score
 
 #from alibi.explainers import AnchorTabular
 from eli5 import show_prediction, show_weights
 
-
-# 06
-grades = ['1b']
+grades = ['06', '1b']
 
 # column indexes
+# these 'remove_columns' have all zeroes or some other problem
+# we can safely remove them without affecting the prediction
 remove_columns = [35, 37, 419, 420,421,422,423,424,428,498,499,500,501,502,504,505,506,507,508,510,511,512,513,514,516,517,518,519,520,522,523,524,525,526,527,528,529,530,531, 532, 536, 563, 564, 565, 566, 567, 568, 572, 574, 607, 614, 616, 619, 620] # all zeroes, I think
 retiro_total = None
 retiro_final = None
@@ -31,13 +27,14 @@ for grade in grades:
     print(grade)
     # load the school data
     # drop first column (school code)
-    # last column is y-values
+    # last column is y-values (target, dropout rate)
 
     def predict(algo, zscoreX, zscoreY):
-        # print algo, accuracy, r-squared?
+        # print algo, accuracy, r-squared
         print(algo)
         print('with zScore on X: ' + str(zscoreX) + ' and Y: ' + str(zscoreY))
 
+        # different ZScore options
         if zscoreX:
             x = np.copy(scaled_x)
         else:
@@ -54,39 +51,36 @@ for grade in grades:
         y_predict = model.predict(x[dividing_line:])
 
 
-        # try this with Alibi and ELI5
-        # ELI5 might have better/faster XGBoost integration?
-        #explainer = AnchorTabular(model.predict, feature_names, categorical_names={})
-        #explainer.fit(x[:dividing_line], disc_perc=[25, 50, 75])
+        # Alibi Explainable AI, only has Classifier support
+        # we are going to use ELI5
+        # ELI5 is typically used in a notebook, but we can export it as HTML
 
-        #print(str(len(order_of_schools)) + ' and ' + str(len(y_predict)) + ' should equal')
         swdoc = open('swdoc.html', 'w')
         swdoc.write(show_weights(model).data)
         swdoc.close()
         spdoc = open('spdoc.html', 'w')
 
+        # we are remembering our prediction for every school, while it is in the test data
         myi = 0
         for school in y_predict:
             schools_to_predict[ order_of_schools[myi] ] = int(1000 * float(school))
             myi += 1
 
             if myi % 60 == 0:
-                # 1/10th chance
+                # 1/10th chance of an individual prediction
                 spdoc.write(show_prediction(model, x[dividing_line+myi], show_feature_values=True).data)
-                #explainer.explain(, threshold=0.95)
         spdoc.close()
 
+        # evaluation of test data
         print(explained_variance_score(y[dividing_line:], y_predict))
         print(r2_score(y[dividing_line:], y_predict))
 
+        # only doing one grade for now
         quit()
 
-    # eli5 and other libraries better than alibi for explaining?
-
-    # scale to municipio pop
-
     def run_algos():
-        for algo in [XGBRegressor]: # BayesianRidge,
+        for algo in [XGBRegressor, BayesianRidge]:
+            # I'm currently not running all ZScore options
             for zscoreX in [False]:
                 for zscoreY in [True]:
                     predict(algo, zscoreX, zscoreY)
@@ -101,6 +95,7 @@ for grade in grades:
                 orig_datarows.append(row)
             else:
                 # header info
+                # remove the same columns from headers which I would remove from the data
                 headers = row
                 feature_names = []
                 for vind in remove_columns:
@@ -108,28 +103,23 @@ for grade in grades:
                 for header in headers[1:-1]:
                     if header is not None:
                         feature_names.append(header)
+                # tell me the meaning of columns which come out of ELI5 importances
                 # print(feature_names[195])
-                # print(feature_names[492])
-                # print(feature_names[234])
-                # print(feature_names[229])
-                # print(feature_names[231])
-                # print(feature_names[151])
-                # print(feature_names[160])
-                # print(feature_names[379])
-                # print(feature_names[315])
-                # print(feature_names[236])
-                # print(feature_names[575])
+
                 retiro_total = row.index('retiros_2010_acelerada_total')
                 retiro_final = row.index('retiros_2017_educmedia_crime')
                 # if retiro_total is None or retiro_final is None:
                 #     print(row)
                 #     quit()
 
+        # random sort of training and test data
         shuffle(orig_datarows)
 
         datarows = []
         schools_to_predict = {}
 
+        # we do 90% training 10% test data
+        # we shift where that 10% comes from, until every school has a predicted value
         for cutout in range(0, 10):
             original_x = []
             original_y = []
@@ -156,12 +146,10 @@ for grade in grades:
                     last_index = -1
                     for val in row[1:-1]:
                         vind = vind + 1
-                        # avoid these always-zero columns
-                        # if len(xrow) == last_index:
-                        #     print(str(vind) + ' stored as col # ' + str(len(xrow)))
-                        # last_index = len(xrow)
 
+                        # avoid these always-zero columns
                         if vind not in remove_columns:
+                            # blank means zero
                             if val == '':
                                 val = 0
 
@@ -180,6 +168,10 @@ for grade in grades:
 
             dividing_line = int(0.9 * len(original_x))
             run_algos()
+
+        # export all of the predictions for schools when they were in the test data
+        # if we had different ZScore settings, we would keep overwriting it because there's only one file per grade
+        # you could change the file name to show any other different settings
         export_school_predictions = open('./remembered_predicted_' + str(grade) + '.json', 'w')
         export_school_predictions.write(json.dumps(schools_to_predict))
         export_school_predictions.close()
