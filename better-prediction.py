@@ -180,7 +180,7 @@ for grade in grades:
 
     # more ideas: scale to municipio pop, urban only
 
-    for algo in [BayesianRidge, LinearRegression, XGBRegressor, RandomForestRegressor]:
+    for algo in [XGBRegressor, RandomForestRegressor]:
         for zscoreX in [True, False]:
             for zscoreY in [True, False]:
                 for retiroPercent in [False]: # I didn't find this to ever be helpful
