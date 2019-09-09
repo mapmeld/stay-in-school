@@ -33,10 +33,10 @@ for grade in grades[:9]:
 
     cursor.execute('UPDATE geo_school_' + grade + ' SET grad_' + grade + ' = \
     ( \
-        SELECT (students_in_grade - temp_dropped_out - perm_dropped_out - repeated)::float \
+        SELECT (students_in_grade - perm_dropped_out - repeated)::float \
             / students_in_grade::float \
-        FROM school_perf_2017_' + grade + ' \
-        WHERE school_perf_2017_' + grade + '.school_code::text = geo_school_' + grade + '.school_code::text \
+        FROM school_perf_2016_' + grade + ' \
+        WHERE school_perf_2016_' + grade + '.school_code::text = geo_school_' + grade + '.school_code::text \
         LIMIT 1 \
     )')
     conn.commit()

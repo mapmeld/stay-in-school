@@ -67,7 +67,7 @@ for grade in grades:
 
         for row in datarows:
             # if the dropout rate is calculated, we can work with this row
-            if row[-1] != '':
+            if row[-1] != '' and row[-1] != '0' and row[-1] != '0.0':
                 xrow = []
                 xrow_retiro_shares = []
                 latest_retiro_total = 1
@@ -181,7 +181,7 @@ for grade in grades:
     # more ideas: scale to municipio pop, urban only
 
     for algo in [XGBRegressor, RandomForestRegressor]:
-        for zscoreX in [True, False]:
+        for zscoreX in [False]: #True, False]:
             for zscoreY in [True, False]:
                 for retiroPercent in [False]: # I didn't find this to ever be helpful
                     for urbanOnly in [False]: # not implemented
