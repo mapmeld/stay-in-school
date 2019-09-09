@@ -14,7 +14,7 @@ from xgboost import XGBRegressor
 #from alibi.explainers import AnchorTabular
 from eli5 import show_prediction, show_weights
 
-grades = ['06', '1b']
+grades = ['06']
 
 # column indexes
 # these 'remove_columns' have all zeroes or some other problem
@@ -104,7 +104,15 @@ for grade in grades:
                     if header is not None:
                         feature_names.append(header)
                 # tell me the meaning of columns which come out of ELI5 importances
-                # print(feature_names[195])
+                print(feature_names[380])
+                print(feature_names[381])
+                print(feature_names[224])
+                print(feature_names[284])
+                print(feature_names[233])
+                print(feature_names[386])
+                print(feature_names[223])
+                print(feature_names[225])
+                print(feature_names[429])
 
                 retiro_total = row.index('retiros_2010_acelerada_total')
                 retiro_final = row.index('retiros_2017_educmedia_crime')
