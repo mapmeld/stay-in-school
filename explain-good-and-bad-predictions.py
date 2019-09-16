@@ -14,7 +14,7 @@ from xgboost import XGBRegressor
 #from alibi.explainers import AnchorTabular
 from eli5 import show_prediction, show_weights
 
-grades = ['06']
+grades = ['06', '1b']
 
 # column indexes
 # these 'remove_columns' have all zeroes or some other problem
@@ -46,6 +46,8 @@ for grade in grades:
             y = np.copy(original_y)
 
         model = algo()
+        if algo == RandomForestRegressor:
+            model = algo(n_estimators=150)
         model.fit(x[:dividing_line], y[:dividing_line])
 
         y_predict = model.predict(x[dividing_line:])
@@ -55,10 +57,10 @@ for grade in grades:
         # we are going to use ELI5
         # ELI5 is typically used in a notebook, but we can export it as HTML
 
-        swdoc = open('swdoc.html', 'w')
+        swdoc = open('swdoc_' + grade + '.html', 'w')
         swdoc.write(show_weights(model).data)
         swdoc.close()
-        spdoc = open('spdoc.html', 'w')
+        spdoc = open('spdoc_' + grade + '.html', 'w')
 
         # we are remembering our prediction for every school, while it is in the test data
         myi = 0
@@ -76,13 +78,13 @@ for grade in grades:
         print(r2_score(y[dividing_line:], y_predict))
 
         # only doing one grade for now
-        quit()
+        #quit()
 
     def run_algos():
-        for algo in [XGBRegressor, BayesianRidge]:
+        for algo in [RandomForestRegressor]: #XGBRegressor
             # I'm currently not running all ZScore options
             for zscoreX in [False]:
-                for zscoreY in [True]:
+                for zscoreY in [False]:
                     predict(algo, zscoreX, zscoreY)
 
     with open('grad_' + grade + '.csv') as csv_file:
@@ -104,15 +106,16 @@ for grade in grades:
                     if header is not None:
                         feature_names.append(header)
                 # tell me the meaning of columns which come out of ELI5 importances
-                print(feature_names[380])
-                print(feature_names[381])
-                print(feature_names[224])
-                print(feature_names[284])
-                print(feature_names[233])
+
+                print(feature_names[550])
+                print(feature_names[383])
+                print(feature_names[382])
+                print(feature_names[492])
                 print(feature_names[386])
-                print(feature_names[223])
-                print(feature_names[225])
-                print(feature_names[429])
+                print(feature_names[482])
+                print(feature_names[639])
+                print(feature_names[428])
+                quit()
 
                 retiro_total = row.index('retiros_2010_acelerada_total')
                 retiro_final = row.index('retiros_2017_educmedia_crime')
@@ -128,7 +131,7 @@ for grade in grades:
 
         # we do 90% training 10% test data
         # we shift where that 10% comes from, until every school has a predicted value
-        for cutout in range(0, 10):
+        for cutout in range(0, 1): #0):
             original_x = []
             original_y = []
             order_of_schools = []
